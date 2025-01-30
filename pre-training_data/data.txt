@@ -1,1 +1,12 @@
+EN:
+Falcon RefinedWeb https://huggingface.co/datasets/tiiuae/falcon-refinedweb
+SlimPajama https://huggingface.co/datasets/cerebras/SlimPajama-627B
+
+ZH:
 Coming soon!
+
+Multilingual:
+Wikipedia https://huggingface.co/datasets/wikimedia/wikipedia 
+
+Code:
+Starcoderdata https://huggingface.co/datasets/bigcode/starcoderdata
