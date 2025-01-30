@@ -122,15 +122,13 @@ for mod in ['co-occurence', 'MI', 'SMI']:
 
         fontsize = 20
         plt.xlabel(f'{mod}', fontproperties=times_new_roman_large)
-        # plt.xlabel(f'{mod} metric', fontproperties=times_new_roman_large)
 
-        # plt.xlim(0, 1)
+        plt.xlim(0, 1)
         plt.ylim(0, 1)
 
         plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1], fontproperties=times_new_roman_large)
         plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1], fontproperties=times_new_roman_large)
         plt.ylabel('ACC', fontproperties=times_new_roman_large)
-        # plt.ylabel('log(ACC+1)', fontproperties=times_new_roman_large)
 
         ax.legend(loc='upper left', fontsize=fontsize, prop=times_new_roman_large)
 
