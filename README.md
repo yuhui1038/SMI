@@ -1,7 +1,7 @@
 
 
 <div align="center">
-    <h2> Predicting Large Language Model Capabilities on Closed-Book QA Tasks Using Only Information Available Prior to Training </h2>
+    <h2> SMI: An Information-Theoretic Metric for Predicting Model Knowledge Solely from Pre-Training Signals </h2>
 
 <p align="center">
   <!-- <a href="https://huggingface.co">Arxiv Paper</a> • -->
