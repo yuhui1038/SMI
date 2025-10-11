@@ -1,7 +1,8 @@
 
 
 <div align="center">
-    <h2> SMI: An Information-Theoretic Metric for Predicting Model Knowledge Solely from Pre-Training Signals </h2>
+    <h2> Beyond Scaling: Measuring and Predicting the Upper Bound of Knowledge Retention in Language Model Pre-Training
+ </h2>
 
 <p align="center">
   <!-- <a href="https://huggingface.co">Arxiv Paper</a> • -->
