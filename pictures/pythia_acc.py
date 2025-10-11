@@ -4,6 +4,9 @@ import numpy as np
 import os
 import matplotlib.font_manager as fm
 from colors import colors5, colors15, colors5_light
+import matplotlib as mpl
+from matplotlib import rcParams
+mpl.rcParams['mathtext.fontset'] = 'stix'
 
 
 save_path = 'pictures/pythia_acc.pdf'
@@ -13,7 +16,7 @@ font_path = '/usr/share/fonts/truetype/msttcorefonts/times.ttf'  # 修改为你�
 if not os.path.exists(font_path):
     raise FileNotFoundError(f"Font file not found: {font_path}")
 
-times_new_roman = fm.FontProperties(fname=font_path, size=24)  # 设置字体和大小
+times_new_roman = fm.FontProperties(fname=font_path, size=30)  # 设置字体和大小
 
 # 读取第一个文件
 main_table = pd.read_excel('analysis/main_tables/main_table.xlsx')
@@ -30,25 +33,29 @@ main_table_unique = main_table.drop_duplicates(subset='model', keep='first')
 merged = pd.merge(baseline, main_table_unique, left_on='model_name', right_on='model', how='left')
 
 # 对 model_size 取 log2
-merged['model_size_log2'] = np.log2(merged['model_size'])
+merged['model_size_log2'] = np.log2(merged['model_size'] * 1e9)
 
 # 按不同类别绘制折线
 categories = ['bloom', 'gpt', 'pythia', 'TinyLlama', 'ours']
 colors = ['r', 'g', 'b', 'y', 'c']
 colors = colors5[:5]
 
-fig, ax = plt.subplots(figsize=(10, 6))
+model_name = {'bloom':'BLOOM', 'gpt':'GPT-Neo', 'pythia':'Pythia', 'TinyLlama':'TinyLlama', 'ours':'Ours'}
+
+fig, ax = plt.subplots(figsize=(16, 8))
 
 for cat, color in zip(categories, colors):
     subset = merged[merged['model_name'].str.contains(cat)]
-    ax.plot(subset['model_size_log2'], subset['acc'], marker='o', linestyle='-', color=color, label=cat)
+    ax.plot(subset['model_size_log2'], subset['acc'], marker='o', linestyle='-', color=color, label=model_name[cat], linewidth=2.5)
 
 # 添加标题和轴标签
 # ax.set_title('Model Accuracy Comparison', fontproperties=times_new_roman)
-ax.set_xlabel('Log2 of Model Size', fontproperties=times_new_roman)
+ax.set_xlabel(r'$\log_2(\text{model size})$', fontproperties=times_new_roman)
 ax.set_ylabel('Accuracy', fontproperties=times_new_roman)
 
-plt.xticks([-8, -4, 0, 4, 8], fontproperties=times_new_roman)
+plt.xlim(20, 40)
+plt.ylim(0.05, 0.25)
+plt.xticks([20, 25, 30, 35, 40], fontproperties=times_new_roman)
 plt.yticks([0.05, 0.1, 0.15, 0.2, 0.25], fontproperties=times_new_roman)
 
 # 添加图例

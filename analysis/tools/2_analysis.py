@@ -22,21 +22,11 @@ if not os.path.exists(font_path):
 times_new_roman_large = fm.FontProperties(fname=font_path, size=30)  # 设置大字体
 
 
-normalize_threshold = -30
-
-
 def normalize_list(lst, method):
     for i in range(len(lst)):
         lst[i] = int(math.log2(lst[i]) * 5) / 5
     x_min = min(lst)
     x_max = max(lst)
-    if 'MI' in method:
-        x_min = normalize_threshold
-        x_max = 0
-        # for x in lst:
-        #     if x > 0 or x < -30:
-        #         print(x, '____________')
-    # print(x_min, x_max)
     normalized_lst = [(x - x_min) / (x_max - x_min) for x in lst]
     return normalized_lst
 
@@ -45,11 +35,12 @@ def analysis_data(model, P):
     data_path = f"infer/merge_outputs/{model}.json"
     with open(data_path, 'r') as f:
         data = json.load(f)
-        data = [js for js in data if js['mi'] >= 2 ** normalize_threshold]
+        data = [js for js in data if js['mi'] > 0]
     corrects = [js['acc'] for js in data]
+    average_acc = sum(corrects) / len(corrects)
 
     # 增加两列 x intercept 和 upper bound
-    results = pd.DataFrame(np.zeros([3, 9]), columns=['model', 'method', 'a', 'b', 'F', 'R2', 'MSE', 'x intercept', 'upper bound'])
+    results = pd.DataFrame(np.zeros([3, 10]), columns=['model', 'method', 'a', 'b', 'F', 'R2', 'MSE', 'x intercept', 'upper bound', 'acc'])
     excel_save_path = f"analysis/tables/{model}.xlsx"
     for j in range(3):
         method = ['CO-OCCUR', 'MI', 'SMI'][j]
@@ -92,6 +83,7 @@ def analysis_data(model, P):
         results.loc[j, 'R2'] = r2
         mse = sum(list(variances.values())) / len(list(variances.values()))
         results.loc[j, 'MSE'] = mse
+        results.loc[j, 'acc'] = average_acc
         if intercept >= 0:
             results.loc[j, 'F'] = f'y = {slope:.3f}x + {intercept:.3f}'
         else:
@@ -117,7 +109,7 @@ def analysis_data(model, P):
         plt.ylim(0, 1)
         plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1], fontproperties=times_new_roman_large)
         plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1], fontproperties=times_new_roman_large)
-        plt.ylabel('ACC', fontproperties=times_new_roman_large)
+        plt.ylabel('Accuracy', fontproperties=times_new_roman_large)
         ax.legend(loc='upper left', prop=times_new_roman_large)
 
         r2 = round(r2, 3)
@@ -127,6 +119,11 @@ def analysis_data(model, P):
         plt.savefig(figure_save_path, dpi=600, bbox_inches='tight')
         results.to_excel(excel_save_path)
         print(len(mis), model, method)
+
+
+def normalize_p(p):
+    resized_p = math.log2(p * 1e9)
+    return resized_p
 
 
 if __name__ == "__main__":
@@ -142,7 +139,7 @@ if __name__ == "__main__":
         model = df.loc[i, 'models'].split('/')[-1]
         P = df.loc[i, 'model_size']
         # 异步执行analysis_data函数
-        result = pool.apply_async(analysis_data, args=(model, P))
+        result = pool.apply_async(analysis_data, args=(model, normalize_p(P)))
         results.append(result)
     # 关闭进程池，不再接受新的任务
     pool.close()
@@ -154,5 +151,5 @@ if __name__ == "__main__":
             result.get()
         except Exception as e:
             print(f"An error occurred: {e}")
-            # traceback.print_exc()
+            traceback.print_exc()
     
