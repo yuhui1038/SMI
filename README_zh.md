@@ -2,8 +2,8 @@
 
 <p align="center">
   <a href="https://arxiv.org/abs/2502.04066"><img src="https://img.shields.io/badge/论文-Arxiv-blue.svg?style=for-the-badge" alt="论文"></a>
-  <a href="https://aclanthology.org/"><img src="https://img.shields.io/badge/会议-ACL%202026-orange.svg?style=for-the-badge" alt="ACL 2026"></a>
-  <a href="https://huggingface.co/EleutherAI/pythia-12b"><img src="https://img.shields.io/badge/模型-Pythia-yellow.svg?style=for-the-badge" alt="Pythia"></a>
+  <a href="https://arxiv.org/pdf/2502.04066"><img src="https://img.shields.io/badge/PDF-arXiv-red.svg?style=for-the-badge" alt="PDF"></a>
+  <img src="https://img.shields.io/badge/会议-ACL%202026%20Main-orange.svg?style=for-the-badge" alt="ACL 2026 Main">
 </p>
 
 > **注意：** 英文版 README 请参阅 [README.md](README.md)。
@@ -19,15 +19,17 @@
 
 ## 📚 项目简介
 
-一个语言模型究竟能从预训练语料中**保留**多少事实知识？这一上界是否能在**训练之前**就被预测出来？本工作系统研究了**预训练语料中的共现统计**（主语–宾语共现频率）与**下游事实回忆能力**之间的关系，并提出一种度量方式，能够预测知识保留的**上界**——揭示了纯粹的 Scaling Law 背后被忽视的因素。
+一个语言模型究竟能从预训练语料中**保留**多少事实知识？这一上界是否能在**训练之前**就被预测出来？本工作直接对**知识保留**——模型记住语料中事实信息的能力——进行建模，并提出一种**在训练前就能估计**该能力的原则化方法。
 
-我们以 **Pythia** 模型族与三个大规模预训练语料——**The Pile**、**ROOTS**、**SlimPajama**——为分析对象，并基于 **ParaRel** 风格的 15 个关系类构建带改写模板的事实探针。
+我们提出 **SMI**（**Size-dependent Mutual Information**，规模依赖的互信息），一种信息论预测指标，融合**知识频率**、**知识独特性**与**模型规模**三方面信息，用于预测**闭卷问答（Closed-book QA）**的准确率。SMI 通过对 **21 个公开模型** + **3 个自训模型**所披露的预训练语料进行大规模文档检索来验证，并辅以鲁棒的多模板 QA 评测。实验表明：SMI 显著优于基于重复频次的基线，对参数量大于 1B 的模型在闭卷问答上可达到 **R² > 0.7** 的预测精度——**完全无需额外训练**。分析还揭示了数据与模型规模扩展的边际效益递减，并给出了仅靠预训练所能达到的**知识保留内在上界**的量化证据。
 
 ### ✨ 核心亮点
 
-- 🔍 **语料端测量** — 在 The Pile / ROOTS / SlimPajama 上对主语–宾语共现频率进行高效搜索
-- 🧪 **模型端探针** — 在 **Pythia** 全系列模型上对 15 类关系进行带改写模板的知识探针
-- 📈 **预测性分析** — 定量刻画预训练共现频率与事实回忆**上界**之间的关系，超越 Scaling Law 趋势
+- 📐 **SMI 指标** — 信息论预测指标，整合**知识频率**、**知识独特性**和**模型规模**
+- 🔍 **语料端测量** — 在 **The Pile**、**ROOTS**、**SlimPajama** 等已披露的预训练语料上进行大规模文档检索
+- 🧪 **模型端评测** — 跨 **21 个公开模型** + **3 个自训模型**的鲁棒多模板 QA 评测
+- 📈 **强预测能力** — 在 1B 以上模型上闭卷 QA 准确率预测 **R² > 0.7**，显著优于重复频次基线
+- 🪜 **超越 Scaling** — 量化证据表明仅靠预训练存在**内在的知识保留上界**
 - 🛠️ **端到端流水线** — 语料下载 · 频率搜索 · vLLM/Transformers 推理 · 图表复现
 
 ## 📂 项目结构
@@ -111,16 +113,18 @@ cd search/slimpajama && bash <search_script>
 
 ### 4. 模型探针（vLLM / Transformers）
 
+探针流水线支持任意 HuggingFace 兼容的 Causal LM。论文中我们将其应用于 **21 个公开模型**（如 Pythia、BLOOM、TinyLlama 等）以及 **3 个自训模型**：
+
 ```bash
 # 推荐：vLLM 高吞吐探针
 python infer/infer_vllm.py \
-    --model /path/to/pythia-XX \
+    --model /path/to/<model_dir> \
     --prompts infer/multi_templates.json \
     --probe   search/pararel_15classes.json \
-    --out     infer/merge_outputs/pythia-XX.jsonl
+    --out     infer/merge_outputs/<model_name>.jsonl
 
 # 或使用 HuggingFace Transformers
-python infer/infer_transformers.py --model /path/to/pythia-XX ...
+python infer/infer_transformers.py --model /path/to/<model_dir> ...
 ```
 
 每个事实都会用 `multi_templates.json` 中的**多个改写模板**询问模型，以降低模板敏感性。批量启动详见 `infer/infer.sh`。
@@ -147,18 +151,23 @@ python pictures/eval_data.py
 如果本项目对您的研究有帮助，欢迎引用：
 
 ```bibtex
-@inproceedings{jiang-zhang-2026-beyondscaling,
-    title     = "Beyond Scaling: Measuring and Predicting the Upper Bound of Knowledge Retention in Language Model Pre-Training",
-    author    = "Jiang, Changhao and Zhang, Ming and Cao, Yifei and Ye, Junjie and
-                 Fan, Xiaoran and Dou, Shihan and Xi, Zhiheng and Sun, Jiajun and
-                 Dong, Yi and Shen, Yujiong and Tong, Jingqi and Fan, Baoyu and
-                 Gui, Tao and Zhang, Qi and Huang, Xuanjing",
-    booktitle = "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics",
-    year      = "2026",
-    publisher = "Association for Computational Linguistics",
-    url       = "https://arxiv.org/abs/2502.04066"
+@misc{jiang2025beyondscaling,
+      title         = {Beyond Scaling: Measuring and Predicting the Upper Bound of
+                       Knowledge Retention in Language Model Pre-Training},
+      author        = {Changhao Jiang and Ming Zhang and Yifei Cao and Junjie Ye and
+                       Xiaoran Fan and Shihan Dou and Zhiheng Xi and Jiajun Sun and
+                       Yi Dong and Yujiong Shen and Jingqi Tong and Baoyu Fan and
+                       Tao Gui and Qi Zhang and Xuanjing Huang},
+      year          = {2025},
+      eprint        = {2502.04066},
+      archivePrefix = {arXiv},
+      primaryClass  = {cs.CL},
+      url           = {https://arxiv.org/abs/2502.04066},
+      note          = {Accepted at ACL 2026 (Main)}
 }
 ```
+
+> ACL 2026 会议论文集发布后，将以官方 ACL Anthology 的 BibTeX 替换此处。
 
 ## 🔗 相关项目
 
